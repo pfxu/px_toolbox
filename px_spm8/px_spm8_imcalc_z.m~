@@ -1,0 +1,33 @@
+function px_spm8_imcalc_z(x,y,para)
+cwd = pwd;
+
+para_m.op = para.mp;
+para_m.on = para.mn;
+px_spm8_imcalc_mean(y,para_m);
+
+para_s.op = para.sp;
+para_s.on = para.sn;
+px_spm8_imcalc_std(y,para_s);
+
+xV = spm_vol(x);
+xY = spm_read_vols(xV);
+
+m  = fullfile(para_m.op,para_m.on); 
+mV = spm_vol(m);
+mY = spm_read_vols(mV);
+
+s  = fullfile(para_s.op,para_s.on);
+sV = spm_vol(s);
+sY = spm_read_vols(sV);
+
+zY = (xY - mY)./sY;
+
+
+oV = xV;
+oV.dt(1) = 16;
+oV.fname = para.on;
+cd (para.op);
+spm_write_vol(oV,zY);
+cd(cwd);
+fprintf('Calculate the z value done.');
+return

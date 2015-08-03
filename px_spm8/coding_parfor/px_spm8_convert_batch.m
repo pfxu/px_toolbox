@@ -1,0 +1,101 @@
+function [para] = px_spm8_convert_batch(para,ip,op)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FORMAT px_spm8_convert_batch(para)
+%   Useage    Thid function is for the batch convertion of dcm2nifti.
+%    input
+%       ip     - input path
+%       op     - output path
+%       para.in     - input user-specified name of the directories, e.g.,
+%                     the name 'func', which including the functional dicom
+%                     data; or the name 't1_mprage', which including the
+%                     structual dicom data.
+%       para.on     - output folder name for the converted data, the order
+%                     of the folder name will be added automatically with
+%                     the output name, e.g., 'run' for the functional data
+%                     will generate 'run001' et al.; 't1' or 'anatomy'
+%                     for the structual data.
+%       para.pre    - prefix name of each subject folder
+%       para.vsub   - number of the subject, e.g., [1:5; 2:4].
+%       para.ddt    - input dicom data type. e.g., 'IMA' 'dcm' or ''(no
+%                     postfix,DEFAULT).
+%       para.ndt    - NIfTI data type for output.
+%                     - 'img', dual file(hdr+img)NIfTI
+%                     - 'nii', single file(nii)NIfTI   <DEFAULT>
+%       para.ht     - hierarchy type.
+%                     - 'flat', do not produce file tree [default] <DEFAULT>
+%                              With all other options, files will be sorted
+%                              into directories according to their
+%                              sequence/protocol names.
+%                     - 'date_time',Place files under ./<StudyDate-StudyTime>/<ProtocolName>
+%                     - 'patid',Place files under ./<PatID>/<ProtocolName>
+%                     - 'patid_date',Place files under ./<PatID>/<StudyDate>/<ProtocolName>
+%                     - 'patname',Place files under ./<PatName>/<ProtocolName>
+%                     - 'series',Place files in series folders, without
+%                        creating patient folders
+%       para.flag   - type of subject name.
+%                     - 0, [pre 001]
+%                     - 1, px_ls all
+% Copyright 2013-2013 Pengfei Xu Beijing Normal University
+% Revision: 1.0 Date: 2012/09/03 00:00:00
+% Pengfei Xu, 2012/09/03,@BNU
+% Revised by PX, change the DEFAULT para.ndt from '.img' to '.nii', 2013/08/08
+%==========================================================================
+
+% Check input
+if ~isfield(para,'pre');para.pre   = [];end
+if ~isfield(para,'vsub');para.sub  = [];end
+if ~isfield(para,'ddt');para.ddt   = '';end
+if ~isfield(para,'ht');para.ht     = 'flat';end
+if ~isfield(para,'ndt');para.ndt   = 'nii';end
+if ~isfield(para,'flag');para.flag = 0;end
+if isempty(para.ddt); para.ddt     = '*';end
+para_conv.ht  = para.ht;
+para_conv.ndt = para.ndt;
+if ~exist(op,'dir');mkdir(op);end
+fid = fopen(fullfile(op,'convet_info.txt'),'a+');
+sublist = px_ls('Reg',ip,'-D',1);
+if isempty(para.pre) && isempty(para.vsub);
+    para.vsub = 1:length(sublist);
+end
+for i = para.vsub
+    if para.flag == 1
+        runlist = px_ls('Reg',sublist{i},'-D',1);
+    elseif para.flag == 0
+        runlist = px_ls('Reg',fullfile(ip,[para.pre num2str(i,'%03.0f')]),'-D',1);
+    end
+    if isempty(runlist) 
+        if para.flag == 1;
+            error(['There is no folder under ' sublist{i} '.']);
+        else
+           error(['There is no folder under ' fullfile(ip,[para.pre num2str(i,'%03.0f')]) '.']);
+        end
+    end
+    n = 0;
+    runs = length(runlist);
+    for j = 1: runs
+        if ~isempty(regexp(runlist{j},para.in,'match'))
+            n = n+1;
+            %             pathout = fullfile(op,[para.pre num2str(i,'%03.0f')],para.on);
+            if runs > 1
+                pathout = fullfile(op,[para.pre num2str(i,'%03.0f')],[para.on num2str(n,'%03.0f')]);
+            elseif runs == 1
+                pathout = fullfile(op,[para.pre num2str(i,'%03.0f')],para.on);
+            end
+            if ~exist(pathout,'dir'); mkdir(pathout);end
+            pathin  = runlist{j};
+            dcmdata = spm_select('FPList',pathin,['^*.*\.' para.ddt '$']);
+            if isempty(dcmdata);
+                error(['Please check your data, there is no data under ' pathin]);
+            end
+            fdp.scan     = cellstr(dcmdata);
+            para_conv.op = pathout;
+            px_spm8_convert(fdp,para_conv);
+            fprintf(fid, '%s      ',pathin);fprintf(fid, '%s \n',pathout);
+            fprintf(fid, '\n');
+        else
+            warning (['The folder with the name',in,'is not found in',runlist{j},'please check your data']);
+        end
+    end
+end
+fclose(fid);
+end

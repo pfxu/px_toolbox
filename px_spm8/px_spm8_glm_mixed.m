@@ -1,0 +1,137 @@
+function px_spm8_glm_mixed(op,prun,rname,cname,conset,phase)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FORMAT px_spm8_model_mixed(op,prun,rname,cname,conset,phase)
+%    Usage This function is used for mixed design model.Here one run is one 
+% block.
+%    op = 'Path of output';
+%    prun = 'Path of each run'; % cell format, one run in one row.
+%    rname = 'name of each run'; % cell format, one run in one row.
+%    cname = 'name of each condition'; % cell format, one run in one row.
+%    conset = oneset time of each condition;
+%    phase.num = how many phases for each trial to analysis.
+%    pahse.name
+% 
+% Pengfei Xu, 2012/09/04,BNU
+% Revised by Pengfei Xu, 11/17/2012, BNU. Added phase
+%==========================================================================
+para = [];
+nrun = size(prun,1);
+datarun = cell(nrun,1);
+rprun = cell(nrun,1);
+for i = 1:nrun
+    %datarun{i,1} = cellstr(spm_select('ExtFPList',prun{i},'^swra.*\.img$'));
+    datarun{i,1} = cellstr(spm_select('ExtFPList',prun{i},'^swra.*\.nii$'));
+    if isempty(datarun{i,1});
+        error('no ^swra.*.nii under %s',prun{i});
+    end
+    rprun{i,1} = cellstr(spm_select('FPList',prun{i},'^rp.*\.txt$'));
+end
+ncon = size(cname,2);
+%%%-----------------------------template-----------------------------------
+matlabbatch{1}.cfg_basicio.cfg_named_dir.name = 'Subject';
+matlabbatch{1}.cfg_basicio.cfg_named_dir.dirs = {{op}};
+matlabbatch{2}.cfg_basicio.cfg_cd.dir(1) = cfg_dep;
+matlabbatch{2}.cfg_basicio.cfg_cd.dir(1).tname = 'Directory';
+matlabbatch{2}.cfg_basicio.cfg_cd.dir(1).tgt_spec{1}(1).name = 'filter';
+matlabbatch{2}.cfg_basicio.cfg_cd.dir(1).tgt_spec{1}(1).value = 'dir';
+matlabbatch{2}.cfg_basicio.cfg_cd.dir(1).tgt_spec{1}(2).name = 'strtype';
+matlabbatch{2}.cfg_basicio.cfg_cd.dir(1).tgt_spec{1}(2).value = 'e';
+matlabbatch{2}.cfg_basicio.cfg_cd.dir(1).sname = 'Named Directory Selector: Subject(1)';
+matlabbatch{2}.cfg_basicio.cfg_cd.dir(1).src_exbranch = substruct('.','val', '{}',{1}, '.','val', '{}',{1});
+matlabbatch{2}.cfg_basicio.cfg_cd.dir(1).src_output = substruct('.','dirs', '{}',{1});
+matlabbatch{3}.cfg_basicio.cfg_mkdir.parent(1) = cfg_dep;
+matlabbatch{3}.cfg_basicio.cfg_mkdir.parent(1).tname = 'Parent Directory';
+matlabbatch{3}.cfg_basicio.cfg_mkdir.parent(1).tgt_spec{1}(1).name = 'filter';
+matlabbatch{3}.cfg_basicio.cfg_mkdir.parent(1).tgt_spec{1}(1).value = 'dir';
+matlabbatch{3}.cfg_basicio.cfg_mkdir.parent(1).tgt_spec{1}(2).name = 'strtype';
+matlabbatch{3}.cfg_basicio.cfg_mkdir.parent(1).tgt_spec{1}(2).value = 'e';
+matlabbatch{3}.cfg_basicio.cfg_mkdir.parent(1).sname = 'Named Directory Selector: Subject(1)';
+matlabbatch{3}.cfg_basicio.cfg_mkdir.parent(1).src_exbranch = substruct('.','val', '{}',{1}, '.','val', '{}',{1});
+matlabbatch{3}.cfg_basicio.cfg_mkdir.parent(1).src_output = substruct('.','dirs', '{}',{1});
+matlabbatch{3}.cfg_basicio.cfg_mkdir.name = 'analysis';
+matlabbatch{4}.spm.stats.fmri_spec.dir(1) = cfg_dep;
+matlabbatch{4}.spm.stats.fmri_spec.dir(1).tname = 'Directory';
+matlabbatch{4}.spm.stats.fmri_spec.dir(1).tgt_spec{1}(1).name = 'filter';
+matlabbatch{4}.spm.stats.fmri_spec.dir(1).tgt_spec{1}(1).value = 'dir';
+matlabbatch{4}.spm.stats.fmri_spec.dir(1).tgt_spec{1}(2).name = 'strtype';
+matlabbatch{4}.spm.stats.fmri_spec.dir(1).tgt_spec{1}(2).value = 'e';
+matlabbatch{4}.spm.stats.fmri_spec.dir(1).sname = 'Make Directory: Make Directory ''analysis''';
+matlabbatch{4}.spm.stats.fmri_spec.dir(1).src_exbranch = substruct('.','val', '{}',{3}, '.','val', '{}',{1});
+matlabbatch{4}.spm.stats.fmri_spec.dir(1).src_output = substruct('.','dir');
+matlabbatch{4}.spm.stats.fmri_spec.timing.units = 'secs';
+matlabbatch{4}.spm.stats.fmri_spec.timing.RT = 2;
+matlabbatch{4}.spm.stats.fmri_spec.timing.fmri_t = 16;
+matlabbatch{4}.spm.stats.fmri_spec.timing.fmri_t0 = 1;
+for run = 1: nrun
+    matlabbatch{4}.spm.stats.fmri_spec.sess(run).scans = datarun{run,1};
+    if phase.num == 1
+        for con = 1:ncon
+            matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(con).name = [rname{run},cname{run,con}];
+            matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(con).onset = conset{run}{con};
+            % matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(con).duration = 0;
+            matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(con).duration = cduration{run}{con};
+            matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(con).tmod = 0;
+            matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(con).pmod = struct('name', {}, 'param', {}, 'poly', {});
+        end
+    else
+        ncond = 0;
+        for p = 1: phase.num
+            for con = 1:ncon
+                ncond = ncond + 1;
+                matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).name = [phase.name{p} rname{run},cname{run,con}];
+                matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).onset = conset{run}{p}{con};
+                % matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).duration = 0;
+                matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).duration = cduration{run}{p}{con};
+                matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).tmod = 0;
+                if ~isfield(para,'pvalue')
+                    matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).pmod = struct('name', {}, 'param', {}, 'poly', {});
+                elseif isfield(para,'pvalue') && ~isempty(find(para.pvalue{run,con},1));% Exclude the condition (in which all value are zero) for the para modulatoin.
+                    matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).pmod.name = para.cname{run,con};
+                    matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).pmod.param = para.pvalue{run,con};
+                    matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).pmod.poly = 1;
+                elseif isfield(para,'pvalue') && isempty(find(para.pvalue{run,con},1));% isempty(find(para.pvalue{run,con} ~= 0))
+                    matlabbatch{4}.spm.stats.fmri_spec.sess(run).cond(ncond).pmod = struct('name', {}, 'param', {}, 'poly', {});
+                    fid = fopen (fullfile(para.op, 'NoParaModValueTrials.txt'),'a+');
+                    fprintf(fid,'Parametric modulation value of ''%s'' in run %d is empty.',para.cname{run,con},run);
+                    fprintf(fid,'\n');
+                    fclose(fid);
+                    warning('Parametric modulation value of ''%s'' in run %d is empty.',para.cname{run,con},run);
+                    fprintf('\n');
+                end
+            end
+        end
+    end
+    matlabbatch{4}.spm.stats.fmri_spec.sess(run).multi = {''};
+    if isfield(para,'covn')
+        for c = 1: length(para.covn)
+            matlabbatch{4}.spm.stats.fmri_spec.sess(run).regress(c).name = char(para.covn{c});
+            covs = load(char(fdp.cov{run,1}));
+            matlabbatch{4}.spm.stats.fmri_spec.sess(run).regress(c).val = covs(:,c);
+        end
+    else
+        matlabbatch{4}.spm.stats.fmri_spec.sess(run).regress = struct('name', {}, 'val', {});
+    end
+    matlabbatch{4}.spm.stats.fmri_spec.sess(run).multi_reg = rprun{run,1};
+    matlabbatch{4}.spm.stats.fmri_spec.sess(run).hpf = 128;
+end
+matlabbatch{4}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
+matlabbatch{4}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0];
+matlabbatch{4}.spm.stats.fmri_spec.volt = 1;
+matlabbatch{4}.spm.stats.fmri_spec.global = 'Scaling'; %%%global correcion---------------------------------------!!!
+matlabbatch{4}.spm.stats.fmri_spec.mask = {''};
+matlabbatch{4}.spm.stats.fmri_spec.cvi = 'AR(1)';
+matlabbatch{5}.spm.stats.fmri_est.spmmat(1) = cfg_dep;
+matlabbatch{5}.spm.stats.fmri_est.spmmat(1).tname = 'Select SPM.mat';
+matlabbatch{5}.spm.stats.fmri_est.spmmat(1).tgt_spec{1}(1).name = 'filter';
+matlabbatch{5}.spm.stats.fmri_est.spmmat(1).tgt_spec{1}(1).value = 'mat';
+matlabbatch{5}.spm.stats.fmri_est.spmmat(1).tgt_spec{1}(2).name = 'strtype';
+matlabbatch{5}.spm.stats.fmri_est.spmmat(1).tgt_spec{1}(2).value = 'e';
+matlabbatch{5}.spm.stats.fmri_est.spmmat(1).sname = 'fMRI model specification: SPM.mat File';
+matlabbatch{5}.spm.stats.fmri_est.spmmat(1).src_exbranch = substruct('.','val', '{}',{4}, '.','val', '{}',{1}, '.','val', '{}',{1});
+matlabbatch{5}.spm.stats.fmri_est.spmmat(1).src_output = substruct('.','spmmat');
+matlabbatch{5}.spm.stats.fmri_est.method.Classical = 1;
+save (fullfile(op,'matlabbatch_glm_mixed'), 'matlabbatch')
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+spm_jobman('initcfg');
+spm('defaults', 'FMRI');
+spm_jobman('run', matlabbatch);

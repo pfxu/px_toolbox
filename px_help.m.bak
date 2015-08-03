@@ -1,0 +1,93 @@
+function px_help
+%% 1. System
+%% MOUNT NTFS Read-only file system TO Mac(intosh)
+% 1. diskutil info /Volumes/YOUR_NTFS_DISK_NAME
+% >>FIND: Device Node
+% Device Node:              /dev/disk0s1
+% 2. hdiutil eject /Volumes/YOUR_NTFS_DISK_NAME
+% "disk1" unmounted.
+% "disk1" ejected.
+% ??????
+% 3. ??????????mount?????
+% sudo mkdir /Volumes/MYHD
+% 4. ?NTFS?? ?? mount ?mac
+% sudo mount_ntfs -o rw,nobrowse /dev/disk0s1 /Volumes/MYHD/
+%% Mac OS X - Install SVN Client on Mac OS X Mountain Lion
+% Overview
+% The instructions below walk you through an plain install of an SVN client as provided by Apple.
+% Install Xcode
+% 
+% Open the AppStore
+% Search for and Install Xcode
+% Install Xcode Command Line Tools (includes svn)
+% 
+% Note that the Xcode Command Line tools include an svn client.
+% open Xcode
+% go to the Xcode menu and select "Prefernces..."
+% click "Downloads" tab
+% select "Components" item and press the Install button next to "Command Line Tools"
+% http://techinstruct.com/wiki/Mac_OS_X_-_Install_SVN_Client_on_Mac_OS_X_Mountain_Lion
+%% Unix sh or csh
+% echo$0  or echo$SHELL
+%% Space
+% In Unix    - \ , e.g., <../Programe file/..> --- <../Programe\ file/..>
+% In MATLAB  - ' ', e.g., <../Programe file/..> --- <../Programe' file'/..>
+
+%% 2. Software%% Learning:
+%% Path
+% % Look for UNIX
+% if isunix
+%     P = [getenv('MATLABPATH') ':'];
+%     % Remove redundant toolbox/local
+%     P = strrep(P,[matlabroot 'toolbox/local'], '');
+%     P = strrep(P,'::',':');
+% else
+%     P = '';
+% end
+%
+% % On ln-server
+% .profile in home directory (~/)
+% PATH=$PATH:/Applications/MATLAB_R2013a.app/bin
+% MATLABPATH=$HOME/Documents/MATLAB:$/Volumes/Data/Tool/matlab_toolbox
+% export PATH MATLABPATH
+% For example:
+% 
+% ######### MATLAB ########################################################
+% PATH=$PATH:/Applications/MATLAB_R2013a.app/bin
+% MATLABPATH=$HOME/Documents/MATLAB:&/Volumes/Data/Tool/matlab_toolbox
+% export PATH MATLABPATH
+% ######### FSL ###########################################################
+% FSLDIR=/usr/local/fsl
+% . ${FSLDIR}/etc/fslconf/fsl.sh
+% PATH=${FSLDIR}/bin:${PATH}
+% export FSLDIR PATH
+% #########################################################################
+%% MATLAB
+% decimate
+% stepwisefit
+% regexp
+% /Applications/MATLAB_R2013a.app/toolbox/matlab/general/
+% /Applications/MATLAB_R2013a.app/toolbox/stats/stats/stats/
+%
+% %.m file
+% pathdef.m in MATLABPATH
+% startup.m
+
+% % open .m file by MATLAB
+% cwd=pwd;
+% cd([matlabroot '\toolbox\matlab\winfun\private']);
+% fileassoc('add',{'.m','.mat','.fig','.p','.mdl',['.' mexext]}); 
+% cd(cwd);
+% disp('Changed Windows file associations. FIG, M, MAT, MDL, MEX, and P files are now associated with MATLAB.')
+% 
+% % To speed matlab up
+% matlab -nodesktop -nojvm -nosplash 
+%% FSL
+% fslmaths -i inputname -thr minimum -uthr maximum -bin -outputname
+%% PANDA for MAC
+% sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.atrun.plist
+%% MVPA
+% http://code.google.com/p/princeton-mvpa-toolbox/
+%% 3.Learning
+%% NeuroAnatomy
+% Calcarine cortex

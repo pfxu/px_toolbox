@@ -1,0 +1,23 @@
+function px_spm8_imcalc_mean(P,para)
+cwd = pwd;
+
+iV = spm_vol(P);
+
+Y4D= zeros(Vdata(1).dim);
+
+for i = 1:size(P,1)
+    Y3D = spm_read_vols(iV{i});
+    Y4D = (:,:,:,Y3D);
+end
+
+mY = mean(Y4D,4);
+% mY = Y./size(V,1);
+
+oV = V(1);
+oV.dt(1) = 16;
+oV.fname = para.on;
+cd (para.op);
+spm_write_vol(oV,mY);
+cd(cwd);
+fprintf('Calculate the mean value done.');
+return

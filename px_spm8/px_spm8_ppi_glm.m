@@ -1,0 +1,108 @@
+function px_spm8_ppi_glm(fdp,para)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FORMAT  px_spm8_ppi_glm(fdp,para)
+%   Usage  This function is used to perform the glm of the ppi.
+%   Input
+%    fdp.scan  - full path of img file (after preprocessed), cell format,
+%                one run in one row.
+%    fdp.rp    - full path of rp file (after preprocessed), cell format, 
+%                one run in one row.
+%    fdp.ppi   - full file of ppi.mat file for each run,cell format, each
+%                run in one row.
+%    para.op   - output path
+%    para.vn   - names for the PPI variable, cell format:
+%                 - para.vn{1} name of PPI.Y 
+%                 - para.vn{2} name of PPI.P 
+%    para.nrun - number of runs.
+%
+% Pengfei Xu, 12/26/2012, @BNU
+% Revised by PX, Dec-09-2014, @UMCG; from px_spm8_model_ppi
+%==========================================================================
+
+% check input
+if ~exist(para.op,'dir');mkdir(para.op);end
+nsess = para.nrun ;
+if nsess ~= size(fdp.scan,1);
+    error('para.nrun does not match with the fdp.scan.');
+end
+if nsess ~= size(fdp.ppi,1);
+    error('para.nrun does not match with the fdp.ppi.');
+end
+for run = 1: para.nrun
+    if isempty(fdp.scan{run});
+        error('empety cell included in fdp.scan.');
+    end
+    if isempty(fdp.ppi{run});
+        error('empety cell included in fdp.ppi.');
+    end
+    if ischar(fdp.scan{run})
+        fdp.SPM = cellstr(fdp.scan{run});
+    end
+    if ischar(fdp.ppi{run})
+        fdp.VOI = cellstr(fdp.ppi{run});
+    end
+end
+%
+matlabbatch{1}.spm.stats.fmri_spec.dir = {para.op};
+matlabbatch{1}.spm.stats.fmri_spec.timing.units = 'secs';
+matlabbatch{1}.spm.stats.fmri_spec.timing.RT = 2;
+matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t = 16;
+matlabbatch{1}.spm.stats.fmri_spec.timing.fmri_t0 = 1;
+
+for s = 1: nsess
+    clear PPI
+    load(fdp.ppi{s,1});
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).scans = fdp.scan{s,1};
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).cond = struct('name', {}, 'onset', {}, 'duration', {}, 'tmod', {}, 'pmod', {});
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).multi = {''};
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).regress(1).name = 'Interaction';
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).regress(1).val = PPI.ppi;
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).regress(2).name = para.vn{1};
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).regress(2).val = PPI.Y;
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).regress(3).name = para.vn{2};
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).regress(3).val = PPI.P;
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).multi_reg = fdp.rp{s,1};
+    matlabbatch{1}.spm.stats.fmri_spec.sess(s).hpf = 128;
+end
+matlabbatch{1}.spm.stats.fmri_spec.fact = struct('name', {}, 'levels', {});
+matlabbatch{1}.spm.stats.fmri_spec.bases.hrf.derivs = [0 0];
+matlabbatch{1}.spm.stats.fmri_spec.volt = 1;
+matlabbatch{1}.spm.stats.fmri_spec.global = 'Scaling';%%% global mean correction
+matlabbatch{1}.spm.stats.fmri_spec.mthresh = 0.8;
+matlabbatch{1}.spm.stats.fmri_spec.mask = {''};
+matlabbatch{1}.spm.stats.fmri_spec.cvi = 'AR(1)';
+matlabbatch{2}.spm.stats.fmri_est.spmmat(1) = cfg_dep;
+matlabbatch{2}.spm.stats.fmri_est.spmmat(1).tname = 'Select SPM.mat';
+matlabbatch{2}.spm.stats.fmri_est.spmmat(1).tgt_spec{1}(1).name = 'filter';
+matlabbatch{2}.spm.stats.fmri_est.spmmat(1).tgt_spec{1}(1).value = 'mat';
+matlabbatch{2}.spm.stats.fmri_est.spmmat(1).tgt_spec{1}(2).name = 'strtype';
+matlabbatch{2}.spm.stats.fmri_est.spmmat(1).tgt_spec{1}(2).value = 'e';
+matlabbatch{2}.spm.stats.fmri_est.spmmat(1).sname = 'fMRI model specification: SPM.mat File';
+matlabbatch{2}.spm.stats.fmri_est.spmmat(1).src_exbranch = substruct('.','val', '{}',{1}, '.','val', '{}',{1}, '.','val', '{}',{1});
+matlabbatch{2}.spm.stats.fmri_est.spmmat(1).src_output = substruct('.','spmmat');
+matlabbatch{2}.spm.stats.fmri_est.method.Classical = 1;
+matlabbatch{3}.spm.stats.con.spmmat(1) = cfg_dep;
+matlabbatch{3}.spm.stats.con.spmmat(1).tname = 'Select SPM.mat';
+matlabbatch{3}.spm.stats.con.spmmat(1).tgt_spec{1}(1).name = 'filter';
+matlabbatch{3}.spm.stats.con.spmmat(1).tgt_spec{1}(1).value = 'mat';
+matlabbatch{3}.spm.stats.con.spmmat(1).tgt_spec{1}(2).name = 'strtype';
+matlabbatch{3}.spm.stats.con.spmmat(1).tgt_spec{1}(2).value = 'e';
+matlabbatch{3}.spm.stats.con.spmmat(1).sname = 'Model estimation: SPM.mat File';
+matlabbatch{3}.spm.stats.con.spmmat(1).src_exbranch = substruct('.','val', '{}',{2}, '.','val', '{}',{1}, '.','val', '{}',{1});
+matlabbatch{3}.spm.stats.con.spmmat(1).src_output = substruct('.','spmmat');
+rp = zeros(1,6);
+matlabbatch{3}.spm.stats.con.consess{1}.tcon.name = 'Interaction';
+matlabbatch{3}.spm.stats.con.consess{1}.tcon.convec = repmat([1 0 0 rp],1,nsess);
+matlabbatch{3}.spm.stats.con.consess{1}.tcon.sessrep = 'none';
+matlabbatch{3}.spm.stats.con.consess{2}.tcon.name = para.vn{1};
+matlabbatch{3}.spm.stats.con.consess{2}.tcon.convec = repmat([0 1 0 rp],1,nsess);
+matlabbatch{3}.spm.stats.con.consess{2}.tcon.sessrep = 'none';
+matlabbatch{3}.spm.stats.con.consess{3}.tcon.name = para.vn{2};
+matlabbatch{3}.spm.stats.con.consess{3}.tcon.convec = repmat([0 0 1 rp],1,nsess);
+matlabbatch{3}.spm.stats.con.consess{3}.tcon.sessrep = 'none';
+matlabbatch{3}.spm.stats.con.delete = 0;
+save(fullfile(para.op,'ppi_glm'),'matlabbatch')
+%
+spm_jobman('initcfg');
+spm('defaults', 'FMRI');
+spm_jobman('serial', matlabbatch);

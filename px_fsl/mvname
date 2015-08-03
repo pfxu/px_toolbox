@@ -1,0 +1,11 @@
+#!/bin/bash
+
+
+for fname in IM*
+do
+   var2=${fname##IM}
+   typeset -i var_temp
+   var_temp=var2+901
+   var1="IM$var_temp"
+   mv $fname ${var1}
+done
